@@ -1,12 +1,15 @@
 #!/bin/bash
 # ghstatus - Show Git repo status at a glance
 
-set -e
+set -euo pipefail
 
+# Parse args
 VERBOSE=false
+for arg in "$@"; do
+  [[ "$arg" == "--verbose" || "$arg" == "-v" ]] && VERBOSE=true
+done
 
-[[ "$1" == "--verbose" || "$1" == "-v" ]] && VERBOSE=true
-
+# Ensure we're in a Git repo
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
   echo "🚫 Not inside a Git repository."
   exit 1
@@ -15,8 +18,8 @@ fi
 CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
 UNCOMMITTED=$(git status --porcelain)
 UNPUSHED_COUNT=$(git log --branches --not --remotes --oneline | wc -l | xargs)
-REMOTE=$(git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD))
-UNMERGED_BRANCHES=$(git branch --no-merged "$CURRENT_BRANCH" | grep -vE "^\*|main|master|dev")
+REMOTE=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")
+UNMERGED_BRANCHES=$(git branch --no-merged "$CURRENT_BRANCH" 2>/dev/null | grep -vE "^\*|main|master|dev" || true)
 
 echo "🧭 Branch: $CURRENT_BRANCH"
 echo "📌 Uncommitted changes: $( [ -z "$UNCOMMITTED" ] && echo "no" || echo "yes" )"
@@ -31,7 +34,12 @@ if [[ "$VERBOSE" == true ]]; then
 
   echo ""
   echo "🌿 Unmerged branches:"
-  echo "$UNMERGED_BRANCHES" || echo "✅ None"
+  if [[ -n "$UNMERGED_BRANCHES" ]]; then
+    echo "$UNMERGED_BRANCHES"
+  else
+    echo "✅ None"
+  fi
 fi
 
+echo ""
 echo "✅ ghstatus completed!"
