@@ -34,6 +34,19 @@ if [ ${#MISSING[@]} -ne 0 ]; then
   echo ""
 fi
 
+# Step 0.5: Check GitHub SSH connectivity
+echo "🔐 Checking GitHub SSH authentication..."
+SSH_TEST=$(ssh -T git@github.com -o StrictHostKeyChecking=no 2>&1 || true)
+
+if echo "$SSH_TEST" | grep -q "successfully authenticated"; then
+  echo "✅ SSH is connected to GitHub!"
+else
+  echo "⚠️ SSH to GitHub failed or is not set up:"
+  echo "   $SSH_TEST"
+  echo "💡 Run this to set up SSH: https://docs.github.com/en/authentication/connecting-to-github-with-ssh"
+  echo ""
+fi
+
 # Step 1: Make all bin/ scripts executable
 if [ -d "$BIN_DIR" ] && compgen -G "$BIN_DIR/*" > /dev/null; then
   echo "✅ Making all CLI files in $BIN_DIR executable..."
