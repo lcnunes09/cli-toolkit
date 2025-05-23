@@ -1,17 +1,12 @@
 # 📀 CLI Toolkit
 A lightweight and expressive CLI toolkit for Git cleanup and automation.
 
-## 🛠 Installation (Recommended: Bootstrap Script)
-1. Clone the repo:
-```bash
-git clone git@github.com:lcnunes09/cli-toolkit.git ~/cli-toolkit
-```
+## 🛠 Installation (Recommended: Setup Script)
 
-2. Run the bootstrap script:
+Clone the repo and run the setup script:
 ```bash
-cd ~/ghcli-toolkit
-./scripts/bootstrap.sh
-``` 
+git clone https://github.com/your-username/cli-toolkit.git && cd cli-toolkit && ./scripts/setup.sh
+```
 
 This will:
 
