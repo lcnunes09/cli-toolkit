@@ -1,0 +1,26 @@
+#!/bin/bash
+# ghwhoami - Display Git and GitHub identity
+
+set -e
+
+NAME=$(git config user.name)
+EMAIL=$(git config user.email)
+SSH_TEST=$(ssh -T git@github.com 2>&1 || true)
+
+echo "🧑 Git Name: $NAME"
+echo "📧 Git Email: $EMAIL"
+
+if echo "$SSH_TEST" | grep -q "successfully authenticated"; then
+  echo "🔐 GitHub SSH: ✅ Connected"
+else
+  echo "🔐 GitHub SSH: ❌ Not connected"
+  echo "📣 Message: $SSH_TEST"
+fi
+
+if [ -f ~/.ssh/id_ed25519.pub ]; then
+  echo "🔑 SSH Key: Found ~/.ssh/id_ed25519.pub"
+else
+  echo "🔑 SSH Key: Not found"
+fi
+
+echo "✅ ghwhoami completed!"

@@ -1,0 +1,1 @@
+git bundle create ~/git-backup-$(date +%s).bundle --all

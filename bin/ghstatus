@@ -1,0 +1,23 @@
+#!/bin/bash
+# ghstatus - Show Git repo status at a glance
+
+set -e
+
+if ! git rev-parse --git-dir > /dev/null 2>&1; then
+  echo "🚫 Not inside a Git repository."
+  exit 1
+fi
+
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
+UNCOMMITTED=$(git status --porcelain)
+UNPUSHED=$(git log --branches --not --remotes --oneline | wc -l | xargs)
+REMOTE=$(git for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD))
+UNMERGED=$(git branch --no-merged | grep -vE "^\*|main|master|dev" | wc -l | xargs)
+
+echo "🧭 Branch: $CURRENT_BRANCH"
+echo "📌 Uncommitted changes: $( [ -z "$UNCOMMITTED" ] && echo "no" || echo "yes" )"
+echo "⬆️ Unpushed commits: $UNPUSHED"
+echo "📦 Unmerged branches (into $CURRENT_BRANCH): $UNMERGED"
+echo "🔗 Remote tracking: ${REMOTE:-none}"
+
+echo "✅ ghstatus completed!"

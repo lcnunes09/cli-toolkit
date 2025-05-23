@@ -1,0 +1,118 @@
+#!/bin/bash
+
+set -e
+
+PROTECTED_BRANCHES=("main" "master" "dev")
+
+DRY_RUN=false
+REMOTE_ONLY=false
+CONFIRM=false
+SHOW_HELP=false
+
+for arg in "$@"; do
+  case $arg in
+    --dry-run) DRY_RUN=true ;;
+    --remote-only) REMOTE_ONLY=true ;;
+    --confirm) CONFIRM=true ;;
+    --help|-h) SHOW_HELP=true ;;
+  esac
+done
+
+if [[ "$SHOW_HELP" == true ]]; then
+  echo ""
+  echo "🧹 ghclean - Clean up merged Git branches locally and remotely"
+  echo ""
+  echo "Usage:"
+  echo "  ghclean [options]"
+  echo ""
+  echo "Options:"
+  echo "  --dry-run       Show what would be deleted without making changes"
+  echo "  --remote-only   Only delete remote branches (keep local)"
+  echo "  --confirm       Prompt before deleting each branch"
+  echo "  --help, -h      Show this help message"
+  echo ""
+  echo "Examples:"
+  echo "  ghclean                 Delete merged local and remote branches"
+  echo "  ghclean --dry-run       Preview what would be deleted"
+  echo "  ghclean --remote-only   Only clean up remote branches"
+  echo "  ghclean --confirm       Confirm before each deletion"
+  echo ""
+  echo "Run this command while on a base branch like 'main' or 'dev'."
+  echo ""
+  exit 0
+fi
+
+for arg in "$@"; do
+  case $arg in
+    --dry-run) DRY_RUN=true ;;
+    --remote-only) REMOTE_ONLY=true ;;
+    --confirm) CONFIRM=true ;;
+  esac
+done
+
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
+
+echo "🔍 Active branch: $CURRENT_BRANCH"
+
+if [[ " ${PROTECTED_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
+  BASE_BRANCH="$CURRENT_BRANCH"
+else
+  echo "🚫 You must run ghclean from a base branch like main or dev."
+  exit 1
+fi
+
+echo "📦 Using base branch: $BASE_BRANCH"
+echo "📥 Fetching latest..."
+git fetch origin --prune > /dev/null
+
+echo "🔍 Searching for merged local branches..."
+MERGED_BRANCHES=$(git branch --merged "$BASE_BRANCH" | grep -vE "^\*|$(IFS='|'; echo "${PROTECTED_BRANCHES[*]}")")
+
+if [[ -z "$MERGED_BRANCHES" ]]; then
+  echo "✅ No merged local branches to clean."
+  exit 0
+fi
+
+echo ""
+echo "🧼 Found merged branches:"
+echo "$MERGED_BRANCHES"
+echo ""
+
+echo "🛠 Options:"
+$DRY_RUN && echo "• 🧪 Dry-run mode enabled"
+$REMOTE_ONLY && echo "• 🗑️ Remote-only mode enabled"
+$CONFIRM && echo "• ✅ Confirm-before-delete enabled"
+echo ""
+
+echo "🚀 Starting cleanup..."
+echo ""
+
+while read -r BRANCH; do
+  [ -z "$BRANCH" ] && continue
+
+  if [[ "$CONFIRM" == true ]]; then
+    read -p "❓ Delete '$BRANCH'? [y/N] " REPLY
+    [[ "$REPLY" != "y" ]] && echo "↩️ Skipped $BRANCH" && continue
+  fi
+
+  if [[ "$DRY_RUN" == true ]]; then
+    echo "🔍 Would delete: $BRANCH"
+    continue
+  fi
+
+  if [[ "$REMOTE_ONLY" == false ]]; then
+    echo "🧹 Deleting local branch: $BRANCH"
+    git branch -D "$BRANCH"
+  fi
+
+  if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+    echo "🗑️ Deleting remote branch: $BRANCH"
+    git push origin --delete "$BRANCH"
+  else
+    echo "📭 No matching remote branch for: $BRANCH"
+  fi
+
+done <<< "$MERGED_BRANCHES"
+
+echo ""
+echo "✅ ghclean completed!"
