@@ -55,8 +55,6 @@ CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
 echo "🔍 Active branch: $CURRENT_BRANCH"
 
 if [[ " ${PROTECTED_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
-  BASE_BRANCH="$CURRENT_BRANCH"
-else
   echo "🚫 You must run ghclean from a base branch like main or dev."
   exit 1
 fi

@@ -41,7 +41,7 @@ ghclean --remote-only --confirm
 Deletes local branches that no longer exist on the remote.
 
 ```bash
-ghprune
+ghprune                  # See which local branches were actually removed
 ```
 
 ## 📂 ghsafe – Backup your repo
@@ -58,6 +58,7 @@ Shows current branch, uncommitted changes, unpushed commits, remote tracking, et
 
 ```bash
 ghstatus
+ghstatus --verbose       # View unpushed commits and unmerged branches
 ```
 
 ## 🧑‍🚀 ghwhoami – Show Git identity

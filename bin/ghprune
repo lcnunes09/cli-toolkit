@@ -1,3 +1,23 @@
+#!/bin/bash
+# ghprune - Delete local branches that no longer exist on remote
+
+set -e
+
+echo "📡 Fetching latest from origin..."
 git fetch -p
 git remote prune origin
-git branch -vv | grep ': gone]' | awk '{ print $1 }' | xargs -r git branch -D
+
+DELETED=$(git branch -vv | grep ': gone]' | awk '{ print $1 }')
+
+if [[ -z "$DELETED" ]]; then
+  echo "✅ No stale branches to delete."
+  exit 0
+fi
+
+echo "🗑️ Deleting stale branches:"
+for branch in $DELETED; do
+  echo "🔻 $branch"
+  git branch -D "$branch"
+done
+
+echo "✅ ghprune completed!"
