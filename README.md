@@ -15,10 +15,10 @@ cd ~/ghcli-toolkit
 
 This will:
 
-✅ Make all CLI files in bin/ executable
-✅ Add the CLI path to your shell config (.zshrc or .bashrc)
-✅ Warn you about missing tools like Git or SSH
-✅ Reload your shell automatically
+- ✅ Make all CLI files in bin/ executable
+- ✅ Add the CLI path to your shell config (.zshrc or .bashrc)
+- ✅ Warn you about missing tools like Git or SSH
+- ✅ Reload your shell automatically
 
 
 # ✅ Usage Examples
@@ -76,10 +76,10 @@ ghwhoami
 
 ## 🤖 Coming Soon Ideas
 
-`ghtrack` – Fix or report branches not tracking origin
-`ghdiff` – Show diff vs main with flags
-`ghreset` – Hard reset local branch to remote
-`ghfix` – Common Git misconfig fixes
+- `ghtrack` – Fix or report branches not tracking origin
+- `ghdiff` – Show diff vs main with flags
+- `ghreset` – Hard reset local branch to remote
+- `ghfix` – Common Git misconfig fixes
 
 # 📜 License
 
