@@ -2,7 +2,8 @@
 
 set -e
 
-CLI_DIR="$HOME/cli-toolkit"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_DIR="$(dirname "$SCRIPT_DIR")"
 BIN_DIR="$CLI_DIR/bin"
 
 echo "🔧 Bootstrapping cli-toolkit..."
