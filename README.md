@@ -5,7 +5,7 @@ A lightweight and expressive CLI toolkit for Git cleanup and automation.
 
 Clone the repo and run the setup script:
 ```bash
-git clone https://github.com/your-username/cli-toolkit.git && cd cli-toolkit && ./scripts/setup.sh
+git clone https://github.com/lcnunes09/cli-toolkit.git && cd cli-toolkit && ./scripts/setup.sh
 ```
 
 This will:
