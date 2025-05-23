@@ -36,19 +36,28 @@ fi
 echo "✅ Making all CLI files in $BIN_DIR executable..."
 chmod +x "$BIN_DIR"/*
 
-# Step 2: Add to PATH if not already
-SHELL_RC="$HOME/.zshrc"
-[[ "$SHELL" == *bash* ]] && SHELL_RC="$HOME/.bashrc"
+# Step 2: Detect shell and assign correct shell rc file
+if [ -n "$ZSH_VERSION" ] || [[ "$(ps -p $$ -o comm=)" == "zsh" ]]; then
+  SHELL_RC="$HOME/.zshrc"
+elif [ -n "$BASH_VERSION" ] || [[ "$(ps -p $$ -o comm=)" == "bash" ]]; then
+  SHELL_RC="$HOME/.bashrc"
+else
+  SHELL_RC="$HOME/.profile"  # fallback
+fi
 
 if ! grep -q "$BIN_DIR" "$SHELL_RC"; then
   echo "🔗 Adding $BIN_DIR to PATH in $SHELL_RC"
-  echo -e "\n# cli-toolkit\nexport PATH=\"$BIN_DIR:\$PATH\"" >> "$SHELL_RC"
+  echo -e "\n# cli-toolkit\nexport PATH=\"$BIN_DIR:\$PATH\"  # added by cli-toolkit" >> "$SHELL_RC"
 else
   echo "🔁 PATH already configured in $SHELL_RC"
 fi
 
 # Step 3: Reload the shell config
 echo "🔄 Reloading shell: $SHELL_RC"
-source "$SHELL_RC"
+if [[ "$SHELL_RC" == *zshrc ]]; then
+  zsh -i -c "source $SHELL_RC"
+else
+  source "$SHELL_RC"
+fi
 
 echo "🚀 Bootstrap complete. Try 'ghstatus' or 'ghwhoami'! ✨"
