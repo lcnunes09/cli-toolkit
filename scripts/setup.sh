@@ -81,7 +81,9 @@ fi
 
 # Final instruction to the user
 echo ""
+echo "🚀 Bootstrap complete."
+echo ""
 echo "🔁 Please restart your terminal or run:"
 echo "   source $SHELL_RC"
+echo "After that, try 'ghstatus' or 'ghwhoami'! ✨" 
 echo ""
-echo "🚀 Bootstrap complete. Try 'ghstatus' or 'ghwhoami'! ✨"
