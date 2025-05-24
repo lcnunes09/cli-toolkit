@@ -64,9 +64,10 @@ git fetch origin --prune > /dev/null
 # ── Find merged branches ────────────────────────────────────────
 echo "🔍 Searching for merged local branches..."
 PATTERN="^($(IFS='|'; echo "${PROTECTED_BRANCHES[*]}"))$"
-MERGED_BRANCHES=$(git branch --merged "$BASE_BRANCH" | sed 's/^[* ]*//' | grep -Ev "$PATTERN" | sed '/^\s*$/d')
+MERGED_BRANCHES=$(git branch --merged "$BASE_BRANCH" | sed 's/^[* ]*//' | grep -Ev "$PATTERN" || true)
+TRIMMED_BRANCHES=$(echo "$MERGED_BRANCHES" | sed '/^\s*$/d')
 
-if [[ -z "$MERGED_BRANCHES" ]]; then
+if [[ -z "$TRIMMED_BRANCHES" ]]; then
   echo "✅ No merged local branches found. Everything is clean!"
   exit 0
 fi
@@ -74,7 +75,7 @@ fi
 # ── Show summary ────────────────────────────────────────────────
 echo ""
 echo "🧼 Found merged branches:"
-echo "$MERGED_BRANCHES"
+echo "$TRIMMED_BRANCHES"
 echo ""
 
 echo "🛠 Options:"
@@ -88,7 +89,7 @@ echo ""
 
 # ── Cleanup logic ───────────────────────────────────────────────
 while read -r BRANCH; do
-  [ -z "$BRANCH" ] && continue
+  [[ -z "${BRANCH// /}" ]] && continue
 
   if [[ "$CONFIRM" == true ]]; then
     read -p "❓ Delete '$BRANCH'? [y/N] " REPLY
@@ -113,7 +114,7 @@ while read -r BRANCH; do
   else
     echo "📭 No matching remote branch for: $BRANCH"
   fi
-done <<< "$MERGED_BRANCHES"
+done <<< "$TRIMMED_BRANCHES"
 
 # ── Final Summary ───────────────────────────────────────────────
 echo ""
