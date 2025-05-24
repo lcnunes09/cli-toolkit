@@ -57,8 +57,10 @@ ghsafe
 Shows current branch, uncommitted changes, unpushed commits, remote tracking, etc.
 
 ```bash
-ghstatus
-ghstatus --verbose       # View unpushed commits and unmerged branches
+ghstatus                  # status for current branch
+ghstatus --verbose        # status + details
+ghstatus --base main      # check branches unmerged into 'main'
+ghstatus --base dev -v    # verbose for branches unmerged into dev
 ```
 
 ## 🧑‍🚀 ghwhoami – Show Git identity
