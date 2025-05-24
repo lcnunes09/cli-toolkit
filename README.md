@@ -1,5 +1,5 @@
 # 📀 CLI Toolkit
-A lightweight and expressive CLI toolkit for Git cleanup and automation.
+A lightweight and expressive CLI toolkit for Git cleanup, repo hygiene, and everyday automation. Designed to save your time — and your branches.
 
 ## 🛠 Installation (Recommended: Setup Script)
 
@@ -10,60 +10,64 @@ git clone git@github.com:lcnunes09/cli-toolkit.git && cd cli-toolkit && ./script
 
 This will:
 
-- ✅ Make all CLI files in bin/ executable
-- ✅ Add the CLI path to your shell config (.zshrc or .bashrc)
-- ✅ Warn you about missing tools like Git or SSH
-- ✅ Reload your shell automatically
+- ✅ Make all CLI tools in bin/ executable
+- ✅ Add the CLI directory to your shell path (.zshrc or .bashrc)
+- ✅ Warn you if Git or SSH are missing or misconfigured
+- ✅ Add an alias ghcli to jump to the repo folder
+- ✅ Remind you to source your shell to finish setup
 
-
-# ✅ Usage Examples
+# ✅ Usage Cheatsheet
 
 ## 🩹 ghclean – Clean merged Git branches
 
-### ✨ Features
-
-- Deletes merged local branches (except protected ones)
-- Deletes matching remote branches
-- Safe to run only from main, dev, or master
-
-🧠 Note: Works only from main, dev, or master to avoid accidental deletion from feature branches
+Deletes all merged local and remote branches in one go — except protected ones like main, dev, and master.
 
 ```bash
 ghclean --help
-ghclean --dry-run           # Show what would be deleted
-ghclean --remote-only       # Only delete remote branches
-ghclean --confirm           # Prompt before each deletion
-ghclean --remote-only --confirm
+ghclean --dry-run             # Preview deletions
+ghclean --remote-only         # Only delete remote branches
+ghclean --confirm             # Prompt before each deletion
+ghclean --dry-run --confirm   # Preview and prompt
 ```
+- ✅ Safe: must run from a base branch (main, dev, master)
+- ✅ Smart: skips protected branches and shows a cleanup summary
+- ✅ Powerful: cleans all merged branches in one pass
 
 ## 🌿 ghprune – Remove stale local branches
 
-Deletes local branches that no longer exist on the remote.
+Deletes local branches that were removed remotely (e.g. after a PR is merged):
 
 ```bash
 ghprune                  # See which local branches were actually removed
 ```
 
-## 📂 ghsafe – Backup your repo
+## 💾 ghsafe – Backup your repo
 
-Creates a .bundle archive of all Git branches for backup.
+Creates a .bundle archive of your repo — all branches included:
 
 ```bash
 ghsafe
 ```
 
-## 📆 ghstatus – Repo summary at a glance
+Perfect for backups or safe transfer.
 
-Shows current branch, uncommitted changes, unpushed commits, remote tracking, etc.
+## 📊 ghstatus – Repo summary at a glance
+
+Displays Git info like:
+- Current branch
+- Uncommitted changes
+- Unpushed commits
+- Remote tracking
+- Unmerged branches (into base)
 
 ```bash
-ghstatus                  # status for current branch
-ghstatus --verbose        # status + details
-ghstatus --base main      # check branches unmerged into 'main'
-ghstatus --base dev -v    # verbose for branches unmerged into dev
+ghstatus                 # Quick status
+ghstatus --verbose       # Full details
+ghstatus --base main     # Check what's not merged into 'main'
+ghstatus -v --base dev   # Verbose for unmerged into dev
 ```
 
-## 🧑‍🚀 ghwhoami – Show Git identity
+## 🧑‍💻 ghwhoami – See your Git identity
 
 Displays your configured Git name, email, SSH connection status, and whether an SSH key is present.
 
@@ -78,6 +82,8 @@ ghwhoami
 - `ghdiff` – Show diff vs main with flags
 - `ghreset` – Hard reset local branch to remote
 - `ghfix` – Common Git misconfig fixes
+
+Do you want to collaborate? Open an issue or PR!
 
 # 📜 License
 
