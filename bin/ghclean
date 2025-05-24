@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 PROTECTED_BRANCHES=("main" "master" "dev")
 
@@ -42,22 +42,17 @@ if [[ "$SHOW_HELP" == true ]]; then
   exit 0
 fi
 
-for arg in "$@"; do
-  case $arg in
-    --dry-run) DRY_RUN=true ;;
-    --remote-only) REMOTE_ONLY=true ;;
-    --confirm) CONFIRM=true ;;
-  esac
-done
-
 CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
 
 echo "🔍 Active branch: $CURRENT_BRANCH"
 
-if [[ " ${PROTECTED_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
+# Only allow running from protected/base branches
+if [[ ! " ${PROTECTED_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
   echo "🚫 You must run ghclean from a base branch like main or dev."
   exit 1
 fi
+
+BASE_BRANCH="$CURRENT_BRANCH"
 
 echo "📦 Using base branch: $BASE_BRANCH"
 echo "📥 Fetching latest..."
@@ -67,7 +62,7 @@ echo "🔍 Searching for merged local branches..."
 MERGED_BRANCHES=$(git branch --merged "$BASE_BRANCH" | grep -vE "^\*|$(IFS='|'; echo "${PROTECTED_BRANCHES[*]}")")
 
 if [[ -z "$MERGED_BRANCHES" ]]; then
-  echo "✅ No merged local branches to clean."
+  echo "✔️ No merged local branches to clean."
   exit 0
 fi
 
@@ -79,7 +74,7 @@ echo ""
 echo "🛠 Options:"
 $DRY_RUN && echo "• 🧪 Dry-run mode enabled"
 $REMOTE_ONLY && echo "• 🗑️ Remote-only mode enabled"
-$CONFIRM && echo "• ✅ Confirm-before-delete enabled"
+$CONFIRM && echo "• ✔️ Confirm-before-delete enabled"
 echo ""
 
 echo "🚀 Starting cleanup..."
