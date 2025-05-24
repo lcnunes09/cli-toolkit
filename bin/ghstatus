@@ -35,7 +35,7 @@ UNCOMMITTED=$(git status --porcelain)
 UNPUSHED_COUNT=$(git log --branches --not --remotes --oneline | wc -l | xargs)
 REMOTE=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")
 
-# ── Determine base branch ─────────────────────────────────
+# ── Determine base for unmerged detection ─────────────────
 TARGET_BRANCH="$BASE_BRANCH"
 SHOW_UNMERGED=false
 
@@ -46,7 +46,7 @@ elif [[ " ${BASE_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
   SHOW_UNMERGED=true
 fi
 
-# ── Detect unmerged or orphan branches ────────────────────
+# ── Detect all other branches (excluding base) ────────────
 UNMERGED_COUNT=0
 UNMERGED_LIST=""
 
@@ -54,14 +54,19 @@ if [[ "$SHOW_UNMERGED" == true ]]; then
   ALL_BRANCHES=$(git for-each-ref --format='%(refname:short)' refs/heads/)
   FILTERED=$(echo "$ALL_BRANCHES" | grep -vE "^(${TARGET_BRANCH}|${BASE_BRANCHES[*]// /|})$")
 
+  TARGET_HASH=$(git rev-parse "$TARGET_BRANCH")
+
   while read -r BRANCH; do
     [[ -z "$BRANCH" ]] && continue
-    if ! git merge-base --is-ancestor "$BRANCH" "$TARGET_BRANCH" 2>/dev/null; then
+    BRANCH_HASH=$(git rev-parse "$BRANCH")
+
+    if [[ "$BRANCH_HASH" != "$TARGET_HASH" ]] || [[ "$BRANCH" != "$TARGET_BRANCH" ]]; then
       UNMERGED_LIST+="$BRANCH"$'\n'
     fi
   done <<< "$FILTERED"
 
-  UNMERGED_COUNT=$(echo "$UNMERGED_LIST" | sed '/^\s*$/d' | wc -l | xargs)
+  UNMERGED_LIST=$(echo "$UNMERGED_LIST" | sed '/^\s*$/d')
+  UNMERGED_COUNT=$(echo "$UNMERGED_LIST" | wc -l | xargs)
 fi
 
 # ── Output ────────────────────────────────────────────────
