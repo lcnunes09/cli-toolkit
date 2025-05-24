@@ -47,14 +47,16 @@ elif [[ " ${BASE_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
 fi
 
 # ── Calculate unmerged branches (if applicable) ───────────
-UNMERGED_COUNT=0
-TRIMMED_UNMERGED=""
+UNMERGED_BRANCHES=()
 
 if [[ "$SHOW_UNMERGED" == true ]]; then
-  RAW_UNMERGED=$(git branch --no-merged "$TARGET_BRANCH" 2>/dev/null | sed 's/^[* ]*//' | grep -Ev "^(${TARGET_BRANCH})$" || true)
-  TRIMMED_UNMERGED=$(echo "$RAW_UNMERGED" | sed '/^\s*$/d')
-  UNMERGED_COUNT=$(echo "$TRIMMED_UNMERGED" | wc -l | xargs)
+  while IFS= read -r branch; do
+    branch="${branch##* }"
+    [[ -n "$branch" && "$branch" != "$TARGET_BRANCH" ]] && UNMERGED_BRANCHES+=("$branch")
+  done < <(git branch --no-merged "$TARGET_BRANCH" 2>/dev/null | sed 's/^[* ]*//')
 fi
+
+UNMERGED_COUNT=${#UNMERGED_BRANCHES[@]}
 
 # ── Output ────────────────────────────────────────────────
 echo "🧭 Branch: $CURRENT_BRANCH"
@@ -75,7 +77,9 @@ if [[ "$VERBOSE" == true ]]; then
     echo ""
     echo "🌿 Unmerged branches into '$TARGET_BRANCH':"
     if [[ "$UNMERGED_COUNT" -gt 0 ]]; then
-      echo "$TRIMMED_UNMERGED"
+      for branch in "${UNMERGED_BRANCHES[@]}"; do
+        echo "$branch"
+      done
     else
       echo "✔️ None"
     fi
