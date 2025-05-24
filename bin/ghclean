@@ -63,7 +63,8 @@ git fetch origin --prune > /dev/null
 
 # ── Find merged branches ────────────────────────────────────────
 echo "🔍 Searching for merged local branches..."
-MERGED_BRANCHES=$(git branch --merged "$BASE_BRANCH" | grep -vE "^\*|$(IFS='|'; echo "${PROTECTED_BRANCHES[*]}")" | sed '/^\s*$/d')
+PATTERN="^($(IFS='|'; echo "${PROTECTED_BRANCHES[*]}"))$"
+MERGED_BRANCHES=$(git branch --merged "$BASE_BRANCH" | sed 's/^[* ]*//' | grep -Ev "$PATTERN" | sed '/^\s*$/d')
 
 if [[ -z "$MERGED_BRANCHES" ]]; then
   echo "✅ No merged local branches found. Everything is clean!"
