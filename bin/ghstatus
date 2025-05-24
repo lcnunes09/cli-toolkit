@@ -3,7 +3,6 @@
 
 set -euo pipefail
 
-# ── Defaults ──────────────────────────────────────────────
 VERBOSE=false
 BASE_BRANCH=""
 BASE_BRANCHES=("main" "master" "dev")
@@ -24,7 +23,7 @@ for (( i=1; i<=$#; i++ )); do
   esac
 done
 
-# ── Ensure we're inside a Git repo ────────────────────────
+# ── Ensure we're in a Git repo ────────────────────────────
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
   echo "🚫 Not inside a Git repository."
   exit 1
@@ -46,14 +45,19 @@ elif [[ " ${BASE_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
   SHOW_UNMERGED=true
 fi
 
-# ── Calculate unmerged branches (if applicable) ───────────
 UNMERGED_BRANCHES=()
 
 if [[ "$SHOW_UNMERGED" == true ]]; then
-  while IFS= read -r branch; do
-    branch="${branch##* }"
-    [[ -n "$branch" && "$branch" != "$TARGET_BRANCH" ]] && UNMERGED_BRANCHES+=("$branch")
-  done < <(git branch --no-merged "$TARGET_BRANCH" 2>/dev/null | sed 's/^[* ]*//')
+  for branch in $(git for-each-ref --format='%(refname:short)' refs/heads/); do
+    if [[ "$branch" == "$TARGET_BRANCH" ]]; then
+      continue
+    fi
+
+    # Check if branch has commits not in TARGET_BRANCH
+    if [[ -n $(git log "$TARGET_BRANCH".."$branch" --oneline) ]]; then
+      UNMERGED_BRANCHES+=("$branch")
+    fi
+  done
 fi
 
 UNMERGED_COUNT=${#UNMERGED_BRANCHES[@]}
@@ -77,8 +81,8 @@ if [[ "$VERBOSE" == true ]]; then
     echo ""
     echo "🌿 Unmerged branches into '$TARGET_BRANCH':"
     if [[ "$UNMERGED_COUNT" -gt 0 ]]; then
-      for branch in "${UNMERGED_BRANCHES[@]}"; do
-        echo "$branch"
+      for b in "${UNMERGED_BRANCHES[@]}"; do
+        echo "$b"
       done
     else
       echo "✔️ None"
