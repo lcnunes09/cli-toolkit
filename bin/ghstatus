@@ -3,28 +3,27 @@
 
 set -euo pipefail
 
-# ── Defaults ──────────────────────────────────────────────
 VERBOSE=false
 BASE_BRANCH=""
 BASE_BRANCHES=("main" "master" "dev")
 
 # ── Parse CLI Arguments ───────────────────────────────────
-for (( i=1; i<=$#; i++ )); do
-  case "${!i}" in
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --verbose|-v) VERBOSE=true ;;
     --base)
-      j=$((i + 1))
-      BASE_BRANCH="${!j:-}"
+      shift
+      BASE_BRANCH="${1:-}"
       if [[ -z "$BASE_BRANCH" ]]; then
         echo "❌ Missing value for --base"
         exit 1
       fi
-      break
       ;;
   esac
+  shift
 done
 
-# ── Ensure we're inside a Git repo ────────────────────────
+# ── Ensure inside a Git repo ──────────────────────────────
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
   echo "🚫 Not inside a Git repository."
   exit 1
@@ -32,10 +31,19 @@ fi
 
 CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
 UNCOMMITTED=$(git status --porcelain)
-UNPUSHED_COUNT=$(git log --branches --not --remotes --oneline | wc -l | xargs)
+UNPUSHED_LIST=$(git log --branches --not --remotes --oneline || true)
+UNPUSHED_COUNT=$(echo "$UNPUSHED_LIST" | sed '/^\s*$/d' | wc -l | xargs)
 REMOTE=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")
 
-# ── Determine base for unmerged detection ─────────────────
+# ── Show warning if local main is behind ──────────────────
+if [[ "$CURRENT_BRANCH" == "main" && -n "$REMOTE" ]]; then
+  BEHIND_COUNT=$(git rev-list --left-right --count origin/main...main 2>/dev/null | awk '{print $2}')
+  if [[ "$BEHIND_COUNT" -gt 0 ]]; then
+    echo "⚠️  Your local main is behind origin/main by $BEHIND_COUNT commits. Consider pulling."
+  fi
+fi
+
+# ── Decide target for unmerged comparison ─────────────────
 TARGET_BRANCH="$BASE_BRANCH"
 SHOW_UNMERGED=false
 
@@ -46,27 +54,23 @@ elif [[ " ${BASE_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
   SHOW_UNMERGED=true
 fi
 
-# ── Detect all other branches (excluding base) ────────────
-UNMERGED_COUNT=0
+# ── Unmerged branch logic ─────────────────────────────────
 UNMERGED_LIST=""
+UNMERGED_COUNT=0
+UNMERGED_ARRAY=()
 
 if [[ "$SHOW_UNMERGED" == true ]]; then
   ALL_BRANCHES=$(git for-each-ref --format='%(refname:short)' refs/heads/)
-  FILTERED=$(echo "$ALL_BRANCHES" | grep -vE "^(${TARGET_BRANCH}|${BASE_BRANCHES[*]// /|})$")
-
-  TARGET_HASH=$(git rev-parse "$TARGET_BRANCH")
+  FILTERED=$(echo "$ALL_BRANCHES" | grep -vE "^(${TARGET_BRANCH}|${BASE_BRANCHES[*]// /|})$" || true)
 
   while read -r BRANCH; do
     [[ -z "$BRANCH" ]] && continue
-    BRANCH_HASH=$(git rev-parse "$BRANCH")
-
-    if [[ "$BRANCH_HASH" != "$TARGET_HASH" ]] || [[ "$BRANCH" != "$TARGET_BRANCH" ]]; then
-      UNMERGED_LIST+="$BRANCH"$'\n'
+    if ! git merge-base --is-ancestor "$BRANCH" "$TARGET_BRANCH" 2>/dev/null; then
+      UNMERGED_ARRAY+=("$BRANCH")
     fi
   done <<< "$FILTERED"
 
-  UNMERGED_LIST=$(echo "$UNMERGED_LIST" | sed '/^\s*$/d')
-  UNMERGED_COUNT=$(echo "$UNMERGED_LIST" | wc -l | xargs)
+  UNMERGED_COUNT=${#UNMERGED_ARRAY[@]}
 fi
 
 # ── Output ────────────────────────────────────────────────
@@ -82,13 +86,19 @@ fi
 if [[ "$VERBOSE" == true ]]; then
   echo ""
   echo "📄 Unpushed commits:"
-  git --no-pager log --branches --not --remotes --oneline || echo "✔️ None"
+  if [[ "$UNPUSHED_COUNT" -gt 0 ]]; then
+    echo "$UNPUSHED_LIST"
+  else
+    echo "✔️ None"
+  fi
 
   if [[ "$SHOW_UNMERGED" == true ]]; then
     echo ""
     echo "🌿 Unmerged branches into '$TARGET_BRANCH':"
     if [[ "$UNMERGED_COUNT" -gt 0 ]]; then
-      echo "$UNMERGED_LIST"
+      for branch in "${UNMERGED_ARRAY[@]}"; do
+        echo "$branch"
+      done
     else
       echo "✔️ None"
     fi
