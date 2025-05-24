@@ -19,13 +19,16 @@ CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
 UNCOMMITTED=$(git status --porcelain)
 UNPUSHED_COUNT=$(git log --branches --not --remotes --oneline | wc -l | xargs)
 REMOTE=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")
-UNMERGED_BRANCHES=$(git branch --no-merged "$CURRENT_BRANCH" 2>/dev/null | grep -vE "^\*|main|master|dev" || true)
-TRIMMED_UNMERGED=$(echo "$UNMERGED_BRANCHES" | sed '/^\s*$/d')
+
+# Clean and count unmerged branches
+RAW_UNMERGED=$(git branch --no-merged "$CURRENT_BRANCH" 2>/dev/null | sed 's/^[* ]*//' | grep -Ev '^main$|^master$|^dev$' || true)
+TRIMMED_UNMERGED=$(echo "$RAW_UNMERGED" | sed '/^\s*$/d')
+UNMERGED_COUNT=$(echo "$TRIMMED_UNMERGED" | wc -l | xargs)
 
 echo "🧭 Branch: $CURRENT_BRANCH"
 echo "📌 Uncommitted changes: $( [ -z "$UNCOMMITTED" ] && echo "no" || echo "yes" )"
 echo "⬆️ Unpushed commits: $UNPUSHED_COUNT"
-echo "📦 Unmerged branches (into $CURRENT_BRANCH): $(echo "$TRIMMED_UNMERGED" | wc -l | xargs)"
+echo "📦 Unmerged branches (into $CURRENT_BRANCH): $UNMERGED_COUNT"
 echo "🔗 Remote tracking: ${REMOTE:-none}"
 
 if [[ "$VERBOSE" == true ]]; then
@@ -35,7 +38,7 @@ if [[ "$VERBOSE" == true ]]; then
 
   echo ""
   echo "🌿 Unmerged branches:"
-  if [[ -n "$TRIMMED_UNMERGED" ]]; then
+  if [[ "$UNMERGED_COUNT" -gt 0 ]]; then
     echo "$TRIMMED_UNMERGED"
   else
     echo "✔️ None"
