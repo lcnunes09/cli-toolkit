@@ -72,7 +72,7 @@ fi
 # ── Output ────────────────────────────────────────────────
 echo "🧭 Branch: $CURRENT_BRANCH"
 echo "📌 Uncommitted changes: $( [ -z "$UNCOMMITTED" ] && echo "no" || echo "yes" )"
-echo "⬆️ Unpushed commits: $UNPUSHED_COUNT"
+echo "⬆️  Unpushed commits: $UNPUSHED_COUNT"
 echo "🔗 Remote tracking: ${REMOTE:-none}"
 
 if [[ "$SHOW_UNMERGED" == true ]]; then
