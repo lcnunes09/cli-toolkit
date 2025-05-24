@@ -1,4 +1,5 @@
 #!/bin/bash
+# ghclean - Clean up merged Git branches locally and remotely
 
 set -euo pipefail
 
@@ -9,6 +10,10 @@ REMOTE_ONLY=false
 CONFIRM=false
 SHOW_HELP=false
 
+LOCAL_DELETED=0
+REMOTE_DELETED=0
+
+# ── Parse CLI args ─────────────────────────────────────────────
 for arg in "$@"; do
   case $arg in
     --dry-run) DRY_RUN=true ;;
@@ -42,30 +47,30 @@ if [[ "$SHOW_HELP" == true ]]; then
   exit 0
 fi
 
+# ── Validate current branch ─────────────────────────────────────
 CURRENT_BRANCH=$(git symbolic-ref --short HEAD)
-
 echo "🔍 Active branch: $CURRENT_BRANCH"
 
-# Only allow running from protected/base branches
 if [[ ! " ${PROTECTED_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
-  echo "🚫 You must run ghclean from a base branch like main or dev."
+  echo "🚫 You must run ghclean from a base branch like main, master, or dev."
   exit 1
 fi
 
 BASE_BRANCH="$CURRENT_BRANCH"
-
 echo "📦 Using base branch: $BASE_BRANCH"
-echo "📥 Fetching latest..."
+echo "📥 Fetching latest from origin..."
 git fetch origin --prune > /dev/null
 
+# ── Find merged branches ────────────────────────────────────────
 echo "🔍 Searching for merged local branches..."
-MERGED_BRANCHES=$(git branch --merged "$BASE_BRANCH" | grep -vE "^\*|$(IFS='|'; echo "${PROTECTED_BRANCHES[*]}")")
+MERGED_BRANCHES=$(git branch --merged "$BASE_BRANCH" | grep -vE "^\*|$(IFS='|'; echo "${PROTECTED_BRANCHES[*]}")" | sed '/^\s*$/d')
 
 if [[ -z "$MERGED_BRANCHES" ]]; then
-  echo "✔️ No merged local branches to clean."
+  echo "✅ No merged local branches found. Everything is clean!"
   exit 0
 fi
 
+# ── Show summary ────────────────────────────────────────────────
 echo ""
 echo "🧼 Found merged branches:"
 echo "$MERGED_BRANCHES"
@@ -80,6 +85,7 @@ echo ""
 echo "🚀 Starting cleanup..."
 echo ""
 
+# ── Cleanup logic ───────────────────────────────────────────────
 while read -r BRANCH; do
   [ -z "$BRANCH" ] && continue
 
@@ -96,16 +102,23 @@ while read -r BRANCH; do
   if [[ "$REMOTE_ONLY" == false ]]; then
     echo "🧹 Deleting local branch: $BRANCH"
     git branch -D "$BRANCH"
+    ((LOCAL_DELETED++))
   fi
 
   if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
     echo "🗑️ Deleting remote branch: $BRANCH"
     git push origin --delete "$BRANCH"
+    ((REMOTE_DELETED++))
   else
     echo "📭 No matching remote branch for: $BRANCH"
   fi
-
 done <<< "$MERGED_BRANCHES"
 
+# ── Final Summary ───────────────────────────────────────────────
+echo ""
+echo "📊 Cleanup Summary:"
+$DRY_RUN && echo "🧪 Dry run only — no branches actually deleted."
+echo "🌿 Local branches deleted: $LOCAL_DELETED"
+echo "☁️ Remote branches deleted: $REMOTE_DELETED"
 echo ""
 echo "✅ ghclean completed!"
