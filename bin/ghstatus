@@ -6,6 +6,7 @@ set -euo pipefail
 # ── Defaults ──────────────────────────────────────────────
 VERBOSE=false
 BASE_BRANCH=""
+BASE_BRANCHES=("main" "master" "dev")
 
 # ── Parse CLI Arguments ───────────────────────────────────
 for (( i=1; i<=$#; i++ )); do
@@ -34,32 +35,50 @@ UNCOMMITTED=$(git status --porcelain)
 UNPUSHED_COUNT=$(git log --branches --not --remotes --oneline | wc -l | xargs)
 REMOTE=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")
 
-# ── Determine branch to check unmerged status against ─────
-TARGET_BRANCH="$CURRENT_BRANCH"
-[[ -n "$BASE_BRANCH" ]] && TARGET_BRANCH="$BASE_BRANCH"
+# ── Determine base for unmerged detection ─────────────────
+TARGET_BRANCH="$BASE_BRANCH"
+SHOW_UNMERGED=false
 
-RAW_UNMERGED=$(git branch --no-merged "$TARGET_BRANCH" 2>/dev/null | sed 's/^[* ]*//' | grep -Ev "^(${TARGET_BRANCH})$" || true)
-TRIMMED_UNMERGED=$(echo "$RAW_UNMERGED" | sed '/^\s*$/d')
-UNMERGED_COUNT=$(echo "$TRIMMED_UNMERGED" | wc -l | xargs)
+if [[ -n "$BASE_BRANCH" ]]; then
+  SHOW_UNMERGED=true
+elif [[ " ${BASE_BRANCHES[*]} " =~ " $CURRENT_BRANCH " ]]; then
+  TARGET_BRANCH="$CURRENT_BRANCH"
+  SHOW_UNMERGED=true
+fi
+
+# ── Calculate unmerged branches (if applicable) ───────────
+UNMERGED_COUNT=0
+TRIMMED_UNMERGED=""
+
+if [[ "$SHOW_UNMERGED" == true ]]; then
+  RAW_UNMERGED=$(git branch --no-merged "$TARGET_BRANCH" 2>/dev/null | sed 's/^[* ]*//' | grep -Ev "^(${TARGET_BRANCH})$" || true)
+  TRIMMED_UNMERGED=$(echo "$RAW_UNMERGED" | sed '/^\s*$/d')
+  UNMERGED_COUNT=$(echo "$TRIMMED_UNMERGED" | wc -l | xargs)
+fi
 
 # ── Output ────────────────────────────────────────────────
 echo "🧭 Branch: $CURRENT_BRANCH"
 echo "📌 Uncommitted changes: $( [ -z "$UNCOMMITTED" ] && echo "no" || echo "yes" )"
 echo "⬆️ Unpushed commits: $UNPUSHED_COUNT"
-echo "📦 Unmerged branches (into $TARGET_BRANCH): $UNMERGED_COUNT"
 echo "🔗 Remote tracking: ${REMOTE:-none}"
+
+if [[ "$SHOW_UNMERGED" == true ]]; then
+  echo "📦 Unmerged branches (into $TARGET_BRANCH): $UNMERGED_COUNT"
+fi
 
 if [[ "$VERBOSE" == true ]]; then
   echo ""
   echo "📄 Unpushed commits:"
   git --no-pager log --branches --not --remotes --oneline || echo "✔️ None"
 
-  echo ""
-  echo "🌿 Unmerged branches into '$TARGET_BRANCH':"
-  if [[ "$UNMERGED_COUNT" -gt 0 ]]; then
-    echo "$TRIMMED_UNMERGED"
-  else
-    echo "✔️ None"
+  if [[ "$SHOW_UNMERGED" == true ]]; then
+    echo ""
+    echo "🌿 Unmerged branches into '$TARGET_BRANCH':"
+    if [[ "$UNMERGED_COUNT" -gt 0 ]]; then
+      echo "$TRIMMED_UNMERGED"
+    else
+      echo "✔️ None"
+    fi
   fi
 fi
 
