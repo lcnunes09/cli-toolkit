@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+HIST_FILE="$HOME/.zsh_history"
+BACKUP_FILE="$HIST_FILE.bak.$(date +%Y%m%d%H%M%S)"
+
+echo "🔍 Checking for corruption in $HIST_FILE..."
+
+# Check if launching an interactive shell triggers the corruption message
+if grep -q "corrupt history file" <(zsh -i -c exit 2>&1); then
+  echo "⚠️ Detected a corrupted Zsh history file."
+
+  read -p "🛠️  Would you like to repair it now? (y/n): " choice
+  if [[ "$choice" == [Yy]* ]]; then
+    echo "🧱 Backing up current history to $BACKUP_FILE"
+    cp "$HIST_FILE" "$BACKUP_FILE"
+
+    echo "🧹 Cleaning up corrupted lines..."
+    strings "$BACKUP_FILE" > "$HIST_FILE"
+
+    echo "🔁 Reloading history..."
+    fc -R "$HIST_FILE"
+
+    echo "✅ Zsh history has been repaired and reloaded."
+  else
+    echo "❌ Repair canceled by user."
+  fi
+else
+  echo "✅ No corruption detected in your Zsh history."
+fi

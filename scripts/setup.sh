@@ -5,6 +5,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_DIR="$(dirname "$SCRIPT_DIR")"
 BIN_DIR="$CLI_DIR/bin"
+FIX_SCRIPT_SRC="$CLI_DIR/scripts/fix-zsh-history.sh"
+GLOBAL_FIXZSH="/usr/local/bin/fixzsh"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔧 CLI Toolkit Bootstrap Starting"
@@ -21,7 +23,7 @@ if ! command -v ssh >/dev/null 2>&1; then
   MISSING+=("SSH")
 fi
 
-if [ ! -f ~/.ssh/id_ed25519.pub ] && [ ! -f ~/.ssh/id_rsa.pub ]; then
+if [ ! -f "$HOME/.ssh/id_ed25519.pub" ] && [ ! -f "$HOME/.ssh/id_rsa.pub" ]; then
   MISSING+=("SSH Key")
 fi
 
@@ -55,6 +57,18 @@ else
   echo "⚠️ No CLI scripts found in $BIN_DIR — skipping chmod"
 fi
 
+# --- FIX-ZSH GLOBAL INSTALL ---
+# Step 1.5: Install fixzsh as a global command
+if [ -f "$FIX_SCRIPT_SRC" ]; then
+  echo "🩹 Installing fixzsh command globally..."
+  chmod +x "$FIX_SCRIPT_SRC"
+  sudo ln -sf "$FIX_SCRIPT_SRC" "$GLOBAL_FIXZSH"
+  echo "✅ fixzsh is now available system-wide."
+else
+  echo "⚠️ fix-zsh-history.sh not found in scripts/. Skipping global install."
+fi
+# --- FIX-ZSH END ---
+
 # Step 2: Detect user shell and pick the right rc file
 CURRENT_SHELL=$(basename "$(getent passwd "$LOGNAME" | cut -d: -f7)")
 if [[ "$CURRENT_SHELL" == "zsh" ]]; then
@@ -79,11 +93,15 @@ if ! grep -q "alias ghcli=" "$SHELL_RC"; then
   echo "alias ghcli='cd $CLI_DIR'" >> "$SHELL_RC"
 fi
 
-# Final instruction to the user
+# Final instructions
 echo ""
 echo "🚀 Bootstrap complete."
 echo ""
 echo "🔁 Please restart your terminal or run:"
 echo "   source $SHELL_RC"
-echo "After that, try 'ghstatus' or 'ghwhoami'! ✨" 
+echo ""
+echo "✨ After that, try one of the following:"
+echo "   ghstatus   → repo overview"
+echo "   ghwhoami   → see Git identity"
+echo "   fixzsh     → repair corrupted Zsh history (now globally available)"
 echo ""
